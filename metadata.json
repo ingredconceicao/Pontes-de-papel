@@ -1,4 +1,5 @@
 {
   "name": "Pontes de Papel",
-  "description": "Uma plataforma para gerenciar o empréstimo e a doação de livros para crianças em situação de vulnerabilidade social, promovendo o acesso à leitura e à educação."
+  "description": "Uma plataforma para gerenciar o empréstimo e a doação de livros para crianças em situação de vulnerabilidade social, promovendo o acesso à leitura e à educação.",
+  "requestFramePermissions": []
 }
