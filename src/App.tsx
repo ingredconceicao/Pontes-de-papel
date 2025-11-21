@@ -50,7 +50,19 @@ const WifiOffIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const CloseIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-6 w-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
 // --- Types & Components ---
+
+interface Book {
+  id: number | string;
+  title: string;
+  author: string;
+}
 
 type BookCardProps = {
   title: string;
@@ -64,7 +76,7 @@ const BookCard: React.FC<BookCardProps> = ({ title, author, coverColor }) => (
       <SimpleBookIcon className="h-6 w-6 text-white/80" />
     </div>
     <div>
-      <h4 className="font-bold text-gray-800">{title}</h4>
+      <h4 className="font-bold text-gray-800 line-clamp-1">{title}</h4>
       <p className="text-sm text-gray-500">{author}</p>
     </div>
   </div>
@@ -76,26 +88,117 @@ type Recommendation = {
   reason: string;
 };
 
+// --- Modal Component for Auth ---
+interface AuthModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+  const [isLogin, setIsLogin] = useState(true);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl relative m-4">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+          <CloseIcon />
+        </button>
+        
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+             <div className="p-3 bg-brand-purple/10 rounded-full">
+               <UserCircleIcon className="h-8 w-8 text-brand-purple" />
+             </div>
+          </div>
+          <h2 className="text-2xl font-bold font-display text-gray-800">
+            {isLogin ? 'Bem-vindo de volta!' : 'Junte-se a nós'}
+          </h2>
+          <p className="text-gray-500 mt-2">
+            {isLogin ? 'Acesse sua conta para gerenciar doações.' : 'Crie sua conta e comece a transformar vidas.'}
+          </p>
+        </div>
+
+        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          {!isLogin && (
+             <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                <input type="text" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-purple/50 focus:border-brand-purple outline-none transition-all" placeholder="Seu nome" />
+             </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+            <input type="email" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-purple/50 focus:border-brand-purple outline-none transition-all" placeholder="seu@email.com" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+            <input type="password" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-purple/50 focus:border-brand-purple outline-none transition-all" placeholder="••••••••" />
+          </div>
+
+          <button className="w-full bg-brand-purple text-white font-bold py-3 rounded-lg hover:bg-opacity-90 transition-all shadow-md mt-6">
+            {isLogin ? 'Entrar' : 'Cadastrar'}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}
+            <button 
+              onClick={() => setIsLogin(!isLogin)} 
+              className="ml-2 font-bold text-brand-teal hover:underline"
+            >
+              {isLogin ? 'Cadastre-se' : 'Faça Login'}
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Mock Data (Fallback) ---
-const MOCK_DONATED_BOOKS = [
+const MOCK_DONATED_BOOKS: Book[] = [
   { id: 1, title: "O Pequeno Príncipe", author: "Antoine de Saint-Exupéry" },
   { id: 2, title: "A Menina que Roubava Livros", author: "Markus Zusak" },
   { id: 3, title: "Onde Vivem os Monstros", author: "Maurice Sendak" },
 ];
 
-const MOCK_DELIVERED_BOOKS = [
-  { id: 1, title: "Chapeuzinho Amarelo", author: "Chico Buarque" },
-  { id: 2, title: "Marcelo, Marmelo, Martelo", author: "Ruth Rocha" },
-  { id: 3, title: "A Turma da Mônica", author: "Mauricio de Sousa" },
+const MOCK_DELIVERED_BOOKS: Book[] = [
+  { id: 4, title: "Chapeuzinho Amarelo", author: "Chico Buarque" },
+  { id: 5, title: "Marcelo, Marmelo, Martelo", author: "Ruth Rocha" },
+  { id: 6, title: "A Turma da Mônica", author: "Mauricio de Sousa" },
 ];
+
+// Combine for search fallback
+const ALL_MOCK_BOOKS = [...MOCK_DONATED_BOOKS, ...MOCK_DELIVERED_BOOKS, 
+  { id: 7, title: "Harry Potter e a Pedra Filosofal", author: "J.K. Rowling" },
+  { id: 8, title: "Meu Pé de Laranja Lima", author: "José Mauro de Vasconcelos" }
+];
+
+// --- Configuration Helper ---
+const getBackendUrl = () => {
+  let url = "";
+  // @ts-ignore
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) {
+    // @ts-ignore
+    url = import.meta.env.VITE_API_URL;
+  }
+  else if (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) {
+    url = process.env.REACT_APP_API_URL;
+  }
+  return url.endsWith('/') ? url.slice(0, -1) : url;
+};
 
 // --- Main Application ---
 const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Data State (Adaptable for API connection)
-  const [recentDonations, setRecentDonations] = useState(MOCK_DONATED_BOOKS);
-  const [deliveredBooks, setDeliveredBooks] = useState(MOCK_DELIVERED_BOOKS);
+  const [searchResults, setSearchResults] = useState<Book[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const [recentDonations, setRecentDonations] = useState<Book[]>(MOCK_DONATED_BOOKS);
+  const [deliveredBooks, setDeliveredBooks] = useState<Book[]>(MOCK_DELIVERED_BOOKS);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'demo'>('demo');
 
@@ -105,17 +208,16 @@ const App: React.FC = () => {
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiError, setAiError] = useState('');
 
-  // Effect to fetch data from backend if configured
+  // Auth Modal State
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   useEffect(() => {
     const connectToBackend = async () => {
-      const backendUrl = process.env.REACT_APP_API_URL; 
-      
+      const backendUrl = getBackendUrl();
       if (!backendUrl) {
-        // No backend configured, staying in demo mode
         setConnectionStatus('demo');
         return; 
       }
-
       setIsConnecting(true);
       try {
         const [donationsRes, deliveredRes] = await Promise.all([
@@ -124,13 +226,11 @@ const App: React.FC = () => {
         ]);
 
         if (donationsRes.ok && deliveredRes.ok) {
-          const donationsData = await donationsRes.json();
-          const deliveredData = await deliveredRes.json();
+          const donationsData: Book[] = await donationsRes.json();
+          const deliveredData: Book[] = await deliveredRes.json();
           setRecentDonations(donationsData);
           setDeliveredBooks(deliveredData);
           setConnectionStatus('connected');
-        } else {
-          throw new Error("Backend returned error");
         }
       } catch (error) {
         console.warn("Could not connect to backend, using local fallback data.", error);
@@ -139,23 +239,58 @@ const App: React.FC = () => {
         setIsConnecting(false);
       }
     };
-
     connectToBackend();
   }, []);
 
+  // --- Search Logic ---
+  const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (!searchQuery.trim()) {
+        setSearchResults([]);
+        setHasSearched(false);
+        return;
+      }
+
+      setIsSearching(true);
+      setHasSearched(true);
+      const backendUrl = getBackendUrl();
+
+      try {
+        if (backendUrl && connectionStatus === 'connected') {
+          // Real Backend Search
+          const response = await fetch(`${backendUrl}/api/books/search?q=${encodeURIComponent(searchQuery)}`);
+          if (response.ok) {
+            const data = await response.json();
+            setSearchResults(data);
+          }
+        } else {
+          // Mock Search (Demo Mode)
+          // Simulate network delay for realism
+          await new Promise(resolve => setTimeout(resolve, 600));
+          const results = ALL_MOCK_BOOKS.filter(book => 
+            book.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            book.author.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+          setSearchResults(results);
+        }
+      } catch (error) {
+        console.error("Search failed", error);
+      } finally {
+        setIsSearching(false);
+      }
+    }
+  };
+
   const handleAiRecommendation = async () => {
     if (!aiPrompt.trim()) return;
-    
     setLoadingAI(true);
     setAiError('');
     setRecommendations([]);
-
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: `Você é um bibliotecário especializado em literatura infantil. O usuário vai descrever uma criança (idade, gostos, interesses). Recomende 3 livros em Português que seriam perfeitos para ela. Retorne apenas um JSON válido.
-        
         Descrição do usuário: "${aiPrompt}"`,
         config: {
           responseMimeType: "application/json",
@@ -172,13 +307,11 @@ const App: React.FC = () => {
           }
         }
       });
-
       if (response.text) {
         const data = JSON.parse(response.text);
         setRecommendations(data);
       }
     } catch (err) {
-      console.error("Erro ao buscar recomendações:", err);
       setAiError('Ops! Ocorreu um erro ao consultar nosso mago dos livros. Tente novamente.');
     } finally {
       setLoadingAI(false);
@@ -187,6 +320,8 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+
       {/* Header */}
       <header className="bg-brand-pink-light/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
         <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -205,7 +340,7 @@ const App: React.FC = () => {
             <a href="#how-it-works" className="text-gray-600 hover:text-brand-purple transition-colors">Como Funciona</a>
             <a href="#books-showcase" className="text-gray-600 hover:text-brand-purple transition-colors">Nossa Estante</a>
           </div>
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex items-center gap-4">
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                 <SearchIcon className="h-5 w-5 text-gray-400" />
@@ -214,46 +349,79 @@ const App: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Procurar livros..."
+                onKeyDown={handleSearch}
+                placeholder="Buscar livros (Enter)..."
                 className="w-56 pl-10 pr-4 py-2 border rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/50 focus:border-brand-purple transition-all"
                 aria-label="Procurar por livros"
               />
             </div>
-          </div>
-          <div className="flex items-center">
-             <a href="#" className="flex items-center space-x-2 text-sm font-medium bg-brand-purple text-white px-4 py-2 rounded-full hover:bg-opacity-90 transition-all shadow-md">
+             <button 
+                onClick={() => setIsAuthModalOpen(true)}
+                className="flex items-center space-x-2 text-sm font-medium bg-brand-purple text-white px-4 py-2 rounded-full hover:bg-opacity-90 transition-all shadow-md">
                 <UserCircleIcon className="h-5 w-5" />
-                <span>Entrar / Cadastrar</span>
-            </a>
+                <span>Entrar</span>
+            </button>
           </div>
         </nav>
       </header>
 
       <main className="flex-grow">
-        {/* Hero Section */}
-        <section className="py-20 md:py-32 bg-white relative overflow-hidden">
-           {/* Decorative background blobs */}
-           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-brand-teal/10 rounded-full blur-3xl"></div>
-           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-brand-purple/10 rounded-full blur-3xl"></div>
-
-          <div className="container mx-auto px-6 text-center relative z-0">
-            <h1 className="text-4xl md:text-6xl font-bold font-display mb-4">
-              Construindo futuros, <span className="gradient-text">uma página de cada vez.</span>
-            </h1>
-            <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-              Promovendo o acesso à leitura e à educação para crianças em situação de vulnerabilidade social através da doação e empréstimo de livros.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <a href="#ai-wizard" className="bg-brand-purple text-white font-bold py-3 px-8 rounded-full text-lg hover:scale-105 transition-transform shadow-lg flex items-center justify-center gap-2">
-                  <SparklesIcon className="h-5 w-5" />
-                  Descobrir Livros
-                </a>
-                <a href="#how-it-works" className="bg-white text-brand-purple border-2 border-brand-purple font-bold py-3 px-8 rounded-full text-lg hover:bg-brand-purple/5 transition-colors shadow-md">
-                  Como Funciona
-                </a>
+        {/* SEARCH RESULTS SECTION (Conditional) */}
+        {hasSearched && (
+          <section className="bg-gray-100 py-10 border-b border-gray-200 animate-fade-in">
+            <div className="container mx-auto px-6">
+              <div className="flex justify-between items-center mb-6">
+                 <h2 className="text-2xl font-bold font-display text-gray-800">Resultados para "{searchQuery}"</h2>
+                 <button onClick={() => {setHasSearched(false); setSearchQuery('');}} className="text-sm text-gray-500 hover:text-brand-purple underline">Limpar busca</button>
+              </div>
+              
+              {isSearching ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple"></div>
+                </div>
+              ) : searchResults.length > 0 ? (
+                <div className="grid md:grid-cols-3 gap-6">
+                  {searchResults.map((book) => (
+                    <BookCard key={book.id} title={book.title} author={book.author} coverColor="bg-brand-teal" />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+                  <SimpleBookIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-600 text-lg">Nenhum livro encontrado com esse termo.</p>
+                  <p className="text-gray-400 text-sm">Tente buscar por título ou autor.</p>
+                </div>
+              )}
             </div>
-          </div>
-        </section>
+          </section>
+        )}
+
+        {/* Hero Section */}
+        {!hasSearched && (
+          <section className="py-20 md:py-32 bg-white relative overflow-hidden">
+             {/* Decorative background blobs */}
+             <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-brand-teal/10 rounded-full blur-3xl"></div>
+             <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-brand-purple/10 rounded-full blur-3xl"></div>
+
+            <div className="container mx-auto px-6 text-center relative z-0">
+              <h1 className="text-4xl md:text-6xl font-bold font-display mb-4">
+                Construindo futuros, <span className="gradient-text">uma página de cada vez.</span>
+              </h1>
+              <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+                Promovendo o acesso à leitura e à educação para crianças em situação de vulnerabilidade social através da doação e empréstimo de livros.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                  <a href="#ai-wizard" className="bg-brand-purple text-white font-bold py-3 px-8 rounded-full text-lg hover:scale-105 transition-transform shadow-lg flex items-center justify-center gap-2">
+                    <SparklesIcon className="h-5 w-5" />
+                    Descobrir Livros
+                  </a>
+                  <button onClick={() => setIsAuthModalOpen(true)} className="bg-white text-brand-purple border-2 border-brand-purple font-bold py-3 px-8 rounded-full text-lg hover:bg-brand-purple/5 transition-colors shadow-md">
+                    Quero Doar
+                  </button>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* AI Book Wizard Section */}
         <section id="ai-wizard" className="py-20 bg-gradient-to-b from-brand-pink-light/30 to-white">
@@ -397,7 +565,7 @@ const App: React.FC = () => {
                   {isConnecting && recentDonations === MOCK_DONATED_BOOKS ? (
                     <div className="text-center py-4 text-gray-400 text-sm animate-pulse">Sincronizando...</div>
                   ) : null}
-                  {recentDonations.map((book: any) => (
+                  {recentDonations.map((book) => (
                     <BookCard key={book.id || book.title} title={book.title} author={book.author} coverColor="bg-brand-green" />
                   ))}
                 </div>
@@ -408,7 +576,7 @@ const App: React.FC = () => {
                   {isConnecting && deliveredBooks === MOCK_DELIVERED_BOOKS ? (
                     <div className="text-center py-4 text-gray-400 text-sm animate-pulse">Sincronizando...</div>
                   ) : null}
-                  {deliveredBooks.map((book: any) => (
+                  {deliveredBooks.map((book) => (
                     <BookCard key={book.id || book.title} title={book.title} author={book.author} coverColor="bg-brand-yellow" />
                   ))}
                 </div>
